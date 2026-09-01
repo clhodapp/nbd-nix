@@ -7,30 +7,22 @@
 }:
 {
 
-  imports = [ inputs.flake-parts.flakeModules.partitions ];
-
   debug = false;
   systems = [
     "x86_64-linux"
     "aarch64-linux"
   ];
 
-  ch-flake = {
+  caisson = {
     configInfo.configName = "nbd-nix";
     libOverlays.exported = libOverlays: {
-      inherit (libOverlays)
-        default
-        ch-nixpkgs
-        ;
-    };
-    modules = {
-      flake.exported = modules: { inherit (modules) default; };
+      inherit (libOverlays) default;
     };
   };
 
   ch-nixpkgs = {
     overlays.all = {
-      default = lib.ch-nixpkgs.mkPolyfillOverlay (
+      default = lib.caisson.nixpkgs.mkPolyfillOverlay (
         final: prev: {
           nbd = prev.nbd.overrideAttrs (prevAttrs: {
             src = inputs.nbd;
@@ -53,10 +45,7 @@
     };
     pkgSets.pkgs = {
       pkgFunction = import inputs.nixpkgs;
-      overlayImports = overlays: [
-        inputs.ch-nixpkgs.overlays.default
-        overlays.default
-      ];
+      overlayImports = overlays: [ overlays.default ];
     };
   };
 
@@ -64,7 +53,7 @@
   partitionedAttrs.formatter = "formatter";
 
   partitions.formatter = {
-    extraInputs = lib.ch-flake.partitionExtraInputs ../../../tests/dependencies;
+    extraInputs = lib.caisson-core.partitionExtraInputs ../../../tests/dependencies;
     module =
       { inputs, ... }:
       {
@@ -74,7 +63,7 @@
   };
 
   partitions.checks = {
-    extraInputs = lib.ch-flake.partitionExtraInputs ../../../tests/dependencies;
+    extraInputs = lib.caisson-core.partitionExtraInputs ../../../tests/dependencies;
     module =
       { inputs, ... }:
       {
