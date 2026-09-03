@@ -20,7 +20,7 @@
     };
   };
 
-  ch-nixpkgs = {
+  caisson.nixpkgs = {
     overlays.all = {
       default = lib.caisson.nixpkgs.mkPolyfillOverlay (
         final: prev: {

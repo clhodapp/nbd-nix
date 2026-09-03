@@ -17,9 +17,9 @@ checkout ships no pre-generated build system.
 ## Consuming
 
 Add this flake as an input and include `overlays.default` in the
-overlays of a package set. In a `ch-nixpkgs`-based flake, that means
+overlays of a package set. In a caisson-based flake, that means
 listing `inputs.nbd-nix.overlays.default` in
-`pkgSets.pkgs.overlayImports`.
+`caisson.nixpkgs.pkgSets.pkgs.overlayImports`.
 
 ## Development
 
