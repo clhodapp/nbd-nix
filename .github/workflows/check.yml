@@ -1,3 +1,12 @@
+# This workflow fails until clhodapp/ch-nixpkgs is public, and the
+# failure is environmental rather than a fault in the build. A run's
+# GITHUB_TOKEN is scoped to this repository alone, so fetching the
+# ch-nixpkgs flake input gets a 404 from the GitHub tarball API. The
+# same `nix flake check -L` passes locally for anyone holding
+# credentials for that repo, and this goes green on its own once
+# ch-nixpkgs flips. It is deliberately not marked continue-on-error:
+# a check that always reports success would stop telling the truth
+# about the build once the fetch starts working.
 name: check
 on:
   push:
