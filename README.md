@@ -43,9 +43,9 @@ set. With plain nixpkgs:
 }
 ```
 
-In a [`ch-nixpkgs`](https://github.com/clhodapp/ch-nixpkgs)-based flake,
-list `inputs.nbd-nix.overlays.default` in `pkgSets.pkgs.overlayImports`
-instead.
+`overlays.default` is a plain nixpkgs overlay, so it also drops into
+whatever overlay list a framework exposes, and into
+`nixpkgs.overlays` in a NixOS configuration.
 
 Because the overlay replaces top-level `pkgs.nbd`, NixOS modules such as
 `services.nbd.server` pick up the overlaid build with no further wiring,
