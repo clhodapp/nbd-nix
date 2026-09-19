@@ -2,11 +2,11 @@
   "nodes": {
     "caisson": {
       "locked": {
-        "lastModified": 1789851301,
-        "narHash": "sha256-Coz3+N4BDbVG4JccE75eAZdRT7QqCB9XZRAd4mwtLoQ=",
+        "lastModified": 1789852095,
+        "narHash": "sha256-tcbX7IdrjB8osheKFBtS793JEAig7ZTr2LxH9ducfmI=",
         "owner": "nix-caisson",
         "repo": "caisson",
-        "rev": "e0cdf0da98596d3d3ce65f9dd59bec55bfc3a8d9",
+        "rev": "68cb9c4e6e6285c4ebdacf06bb963b6d59bf2a12",
         "type": "github"
       },
       "original": {
@@ -17,11 +17,11 @@
     },
     "caisson_2": {
       "locked": {
-        "lastModified": 1789851301,
-        "narHash": "sha256-Coz3+N4BDbVG4JccE75eAZdRT7QqCB9XZRAd4mwtLoQ=",
+        "lastModified": 1789852095,
+        "narHash": "sha256-tcbX7IdrjB8osheKFBtS793JEAig7ZTr2LxH9ducfmI=",
         "owner": "nix-caisson",
         "repo": "caisson",
-        "rev": "e0cdf0da98596d3d3ce65f9dd59bec55bfc3a8d9",
+        "rev": "68cb9c4e6e6285c4ebdacf06bb963b6d59bf2a12",
         "type": "github"
       },
       "original": {
@@ -36,11 +36,11 @@
         "nixpkgs-lib": "nixpkgs-lib"
       },
       "locked": {
-        "lastModified": 1789851532,
-        "narHash": "sha256-7ZcUnaHjoiZqFEi/GibkyqW9Hc15ImGxG7/lUFVvE5U=",
+        "lastModified": 1789852355,
+        "narHash": "sha256-EXfx1x4FRQ2nj1tQKRzugKQGMU8HBXhOGTFLMijUTEU=",
         "owner": "clhodapp",
         "repo": "ch-nixpkgs",
-        "rev": "d4b46e71f5c847a6eb7f1c75c1326d53422d91ac",
+        "rev": "66cc633d06423159f266d49faebf974edf306f9a",
         "type": "github"
       },
       "original": {
