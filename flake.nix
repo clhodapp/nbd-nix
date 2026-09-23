@@ -28,9 +28,7 @@
           ch-nixpkgs = inputs.ch-nixpkgs;
         };
 
-        libOverlays = mkLibOverlay: {
-          default = mkLibOverlay ./lib-overlays/default;
-        };
+        libOverlays = caisson.lib.caisson-core.mkLibOverlays ./lib-overlays;
       };
     in
     lib.caisson.flake-parts.mkConfiguration {
