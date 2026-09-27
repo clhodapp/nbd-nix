@@ -5,7 +5,6 @@
 
   inputs = {
     caisson.url = "github:nix-caisson/caisson";
-    ch-nixpkgs.url = "github:clhodapp/ch-nixpkgs";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
     flake-parts.inputs.nixpkgs-lib.follows = "nixpkgs";
@@ -26,7 +25,6 @@
         ];
         projects = {
           inherit caisson;
-          ch-nixpkgs = inputs.ch-nixpkgs;
         };
 
         libOverlays = caisson.lib.caisson-core.mkLibOverlays ./lib-overlays;
