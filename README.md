@@ -12,13 +12,21 @@ The override keeps nixpkgs' packaging and swaps only the source and
 version. nixpkgs' patches are dropped, since they are written against
 the release nixpkgs carries.
 
+The overlay also adds `nbd-unstable`, the same packaging built from
+the head of upstream's default branch, versioned
+`<release>-unstable-<date>` after the newest release and the
+snapshot's commit date. It replaces nothing; a consumer that wants it
+selects `pkgs.nbd-unstable`.
+
 ## Why
 
 nixpkgs packages a new nbd release some time after upstream tags it,
 and a channel carries that package some time after that. This flake
-builds the newest release as soon as upstream tags it: a daily
-workflow moves the `nbd` input to the latest release, checks that it
-builds, and pushes the bump to `main`.
+builds the newest release as soon as upstream tags it, and the master
+snapshot for a fix that has not been released yet: a daily workflow
+moves the `nbd` input to the latest release and the `nbd-unstable`
+input to the branch head, checks that both build, and pushes the
+advance to `main`.
 
 ## Consuming
 
@@ -57,17 +65,19 @@ evaluates against.
 pin a revision through their own lockfile and update on their own
 schedule.
 
-The `nbd` input names upstream's newest release tag, and
-`.github/workflows/update.yml` moves it forward daily as releases
-appear, so the version this overlay builds follows upstream. The
-exported surface is just `overlays.default`, and a change to that name
-would be a breaking change.
+The `nbd` input names upstream's newest release tag and the
+`nbd-unstable` input its default branch; `.github/workflows/update.yml`
+moves both forward daily, so the versions this overlay builds follow
+upstream. The exported surface is `overlays.default` with its `nbd`
+and `nbd-unstable` attributes, and a change to those names would be a
+breaking change.
 
 ## Development
 
-`nix flake check` builds the overlaid `nbd` against this flake's own
-nixpkgs pin; `nix fmt` formats.
+`nix flake check` builds `nbd` and `nbd-unstable` against this flake's
+own nixpkgs pin; `nix fmt` formats.
 
 To move to a release by hand, change the tag in the `nbd` input's URL
 in `flake.nix` and run `nix flake update nbd`. The overlay reads its
-version from that tag, so nothing else changes.
+version from that tag, so nothing else changes. To move the master
+snapshot by hand, run `nix flake update nbd-unstable`.

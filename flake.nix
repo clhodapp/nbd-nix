@@ -9,10 +9,14 @@
     flake-parts.url = "github:hercules-ci/flake-parts";
     flake-parts.inputs.nixpkgs-lib.follows = "nixpkgs";
 
-    # Upstream's newest release tag. .github/workflows/update.yml moves
-    # it forward; the overlay reads its version from it.
+    # Upstream's newest release tag, for `nbd`. update.yml moves it
+    # forward; the overlay reads its version from it.
     nbd.flake = false;
     nbd.url = "github:NetworkBlockDevice/nbd/nbd-3.27.1";
+    # Upstream's default branch, for `nbd-unstable`; advanced daily by
+    # update.yml.
+    nbd-unstable.flake = false;
+    nbd-unstable.url = "github:NetworkBlockDevice/nbd";
   };
 
   outputs =

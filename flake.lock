@@ -93,6 +93,22 @@
         "type": "github"
       }
     },
+    "nbd-unstable": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1789401542,
+        "narHash": "sha256-1wpmQc4lpp1OmKShb8+U1KOseu02IkfCPcSrt8jbBOo=",
+        "owner": "NetworkBlockDevice",
+        "repo": "nbd",
+        "rev": "e906c55438d4f0a606f571b60640461383c4d059",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NetworkBlockDevice",
+        "repo": "nbd",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1789785513,
@@ -129,6 +145,7 @@
         "caisson": "caisson",
         "flake-parts": "flake-parts_2",
         "nbd": "nbd",
+        "nbd-unstable": "nbd-unstable",
         "nixpkgs": "nixpkgs"
       }
     }
