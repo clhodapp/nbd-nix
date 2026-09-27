@@ -1,11 +1,16 @@
 # SPDX-License-Identifier: MIT
 #
-# Follows upstream without anyone bumping by hand. Every run moves the
-# `nbd` input to upstream's latest release when that is newer than the
-# tag it names, and the `nbd-unstable` input to the head of upstream's
-# default branch; then it proves the result with the flake checks and
-# pushes the advance to main. The overlay reads both versions from the
-# lock, so flake.nix and flake.lock are the whole change.
+# Follows upstream without anyone bumping by hand. Two inputs track two
+# lines: `nbd` upstream's latest release, `nbd-unstable` the head of
+# upstream's default branch. Every run asks GitHub where each line
+# stands and, for each input behind its line, moves it (the release
+# tag in flake.nix and the lock for `nbd`, the lock alone for
+# `nbd-unstable`), proves the result by building that package's check,
+# and commits the advance. The advances that pass are pushed to main
+# together; an input whose advance fails its check stays where it was,
+# and the run fails after the push, naming it. The overlay reads both
+# versions from the lock, so flake.nix and flake.lock are the whole
+# change.
 #
 # A push made with the workflow's own token starts no other workflow,
 # so the two that a push to main would have started are dispatched at
@@ -14,7 +19,7 @@
 # consumers onto the new pins.
 #
 # A run that finds main moved under it (its push is refused as a
-# non-fast-forward) fails and leaves the advance to the next run.
+# non-fast-forward) fails and leaves the advances to the next run.
 
 name: update
 
@@ -25,7 +30,7 @@ on:
     - cron: "41 6 * * *"
   workflow_dispatch:
 
-# Pushing the advance; dispatching check.yml and notify-workspace.yml.
+# Pushing the advances; dispatching check.yml and notify-workspace.yml.
 permissions:
   contents: write
   actions: write
@@ -38,7 +43,7 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v7
         with:
@@ -53,24 +58,44 @@ jobs:
       # a draft nor a prerelease, so neither upstream's old v1.x tags
       # nor a prerelease is a candidate. The version sort guards
       # against a "latest" that sorts below the current tag.
-      - name: Advance the inputs
+      - name: Advance each input to where its line stands
         id: bump
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           moved=()
+          failed=()
+
+          # Settles the advance of one line that the working tree
+          # holds in the named files: builds the line's check, then
+          # commits the files or puts them back.
+          settle() {
+            local line=$1 before=$2 after=$3
+            shift 3
+            git diff -- "$@"
+            if nix build --print-build-logs --no-link ".#checks.x86_64-linux.$line"; then
+              git commit -q -m "maint($line): $before -> $after" -- "$@"
+              moved+=("$line $after")
+              echo "$line $before becomes $after."
+            else
+              git checkout -- "$@"
+              failed+=("$line $after")
+              echo "::error::$line $after fails its check; $before stays."
+            fi
+          }
 
           current=$(jq -r '.nodes.nbd.original.ref' flake.lock)
           latest=$(gh api repos/NetworkBlockDevice/nbd/releases/latest --jq .tag_name)
           newest=$(printf '%s\n%s\n' "$current" "$latest" | sort -V | tail -n1)
           if [[ "$latest" != "$current" && "$newest" == "$latest" ]]; then
-            echo "nbd $current becomes $latest."
             sed -i -E "s|(nbd\.url = \"github:NetworkBlockDevice/nbd/)[^\"]+|\1$latest|" flake.nix
             grep -q "nbd/$latest\"" flake.nix
             nix flake update nbd
             [[ "$(jq -r '.nodes.nbd.original.ref' flake.lock)" == "$latest" ]]
-            moved+=("nbd ${current#nbd-} -> ${latest#nbd-}")
+            settle nbd "${current#nbd-}" "${latest#nbd-}" flake.nix flake.lock
           else
             echo "nbd $current is upstream's latest release."
           fi
@@ -79,37 +104,21 @@ jobs:
           nix flake update nbd-unstable
           after=$(jq -r '.nodes."nbd-unstable".locked.rev' flake.lock)
           if [[ "$before" != "$after" ]]; then
-            echo "nbd-unstable ${before:0:12} becomes ${after:0:12}."
-            moved+=("nbd-unstable ${before:0:12} -> ${after:0:12}")
+            settle nbd-unstable "${before:0:12}" "${after:0:12}" flake.lock
           else
             echo "nbd-unstable ${before:0:12} is the head of upstream's default branch."
           fi
 
-          if [[ ${#moved[@]} -eq 0 ]]; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          git diff
-          {
-            echo "changed=true"
-            echo "moved=$(printf '%s, ' "${moved[@]}" | sed 's/, $//')"
-          } >> "$GITHUB_OUTPUT"
+          echo "moved=${moved[*]:-}" >> "$GITHUB_OUTPUT"
+          echo "failed=${failed[*]:-}" >> "$GITHUB_OUTPUT"
 
-      - name: Run the flake checks against the advance
-        if: steps.bump.outputs.changed == 'true'
-        run: nix flake check -L
-
-      - name: Push the advance to main
-        if: steps.bump.outputs.changed == 'true'
+      - name: Push the advances to main
+        if: steps.bump.outputs.moved != ''
         env:
           GH_TOKEN: ${{ github.token }}
           MOVED: ${{ steps.bump.outputs.moved }}
         run: |
           set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add flake.nix flake.lock
-          git commit -m "maint: advance pins ($MOVED)"
           git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}" HEAD:main
           echo "::notice::Pushed to main: $MOVED."
 
@@ -117,10 +126,18 @@ jobs:
       # builds main's own commit, and notify-workspace.yml passes the
       # head of the ref it was dispatched on.
       - name: Start the runs the push would have started
-        if: steps.bump.outputs.changed == 'true'
+        if: steps.bump.outputs.moved != ''
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           gh workflow run check.yml --repo "$GITHUB_REPOSITORY" --ref main
           gh workflow run notify-workspace.yml --repo "$GITHUB_REPOSITORY" --ref main
+
+      - name: Fail for the inputs that could not move
+        if: steps.bump.outputs.failed != ''
+        env:
+          FAILED: ${{ steps.bump.outputs.failed }}
+        run: |
+          echo "::error::Held back by a failing check: $FAILED."
+          exit 1
