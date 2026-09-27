@@ -13,6 +13,14 @@ let
   # the `nbd-` prefix upstream puts on its tags.
   nbdRef = (builtins.fromJSON (builtins.readFile ../../../flake.lock)).nodes.nbd.original.ref;
   nbdVersion = builtins.head (builtins.match "nbd-(.*)" nbdRef);
+  # The master build is versioned as nixpkgs versions branch
+  # snapshots: the newest release, then the snapshot's commit date.
+  nbdUnstableDate =
+    let
+      d = inputs.nbd-unstable.lastModifiedDate;
+    in
+    "${builtins.substring 0 4 d}-${builtins.substring 4 2 d}-${builtins.substring 6 2 d}";
+  nbdUnstableVersion = "${nbdVersion}-unstable-${nbdUnstableDate}";
 in
 {
 
@@ -35,6 +43,12 @@ in
             # nixpkgs' patches are written against the release it
             # carries; a newer release includes or supersedes them.
             patches = [ ];
+          };
+          # The same packaging built from upstream's default branch.
+          # Added beside `nbd`, replacing nothing.
+          nbd-unstable = final.nbd.overrideAttrs {
+            src = inputs.nbd-unstable;
+            version = nbdUnstableVersion;
           };
         }
       );
@@ -74,10 +88,11 @@ in
           { pkgs, ... }:
           {
             checks = {
-              # Building the overlaid nbd proves the pinned release
-              # still autoreconfs and compiles against the pinned
-              # nixpkgs.
+              # Building both packages proves the pinned release and
+              # the pinned master snapshot still autoreconf and
+              # compile against the pinned nixpkgs.
               nbd = pkgs.nbd;
+              nbd-unstable = pkgs.nbd-unstable;
             };
           };
       };
