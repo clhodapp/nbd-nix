@@ -5,6 +5,15 @@
   lib,
   ...
 }:
+let
+  # Upstream computes its version with `git describe` at configure
+  # time, which a flake input cannot run; nixpkgs' packaging puts the
+  # package's `version` in its place. So the version is the release
+  # tag the `nbd` input names in flake.nix, read from the lock, minus
+  # the `nbd-` prefix upstream puts on its tags.
+  nbdRef = (builtins.fromJSON (builtins.readFile ../../../flake.lock)).nodes.nbd.original.ref;
+  nbdVersion = builtins.head (builtins.match "nbd-(.*)" nbdRef);
+in
 {
 
   imports = [ inputs.flake-parts.flakeModules.partitions ];
@@ -20,16 +29,13 @@
     overlays.all = {
       default = lib.caisson.nixpkgs.mkPolyfillOverlay (
         final: prev: {
-          nbd = prev.nbd.overrideAttrs (prevAttrs: {
+          nbd = prev.nbd.overrideAttrs {
             src = inputs.nbd;
-            version = "unstable";
+            version = nbdVersion;
+            # nixpkgs' patches are written against the release it
+            # carries; a newer release includes or supersedes them.
             patches = [ ];
-            nativeBuildInputs = prevAttrs.nativeBuildInputs ++ [
-              final.autoreconfHook
-              final.autoconf-archive
-              final.flex
-            ];
-          });
+          };
         }
       );
     };
@@ -68,9 +74,9 @@
           { pkgs, ... }:
           {
             checks = {
-              # Building the overlaid nbd proves the upstream-master
-              # source still autoreconfs and compiles against the
-              # pinned nixpkgs.
+              # Building the overlaid nbd proves the pinned release
+              # still autoreconfs and compiles against the pinned
+              # nixpkgs.
               nbd = pkgs.nbd;
             };
           };

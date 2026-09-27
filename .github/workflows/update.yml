@@ -1,0 +1,111 @@
+# SPDX-License-Identifier: MIT
+#
+# Follows upstream's releases without anyone bumping by hand. Every run
+# asks GitHub for nbd's latest release and, when it is newer than the
+# tag the `nbd` input names, moves the input to it in flake.nix,
+# re-locks, proves the result with the flake checks, and pushes the
+# bump to main. The overlay reads its version from that tag, so
+# flake.nix and flake.lock are the whole change.
+#
+# A push made with the workflow's own token starts no other workflow,
+# so the two that a push to main would have started are dispatched at
+# the end instead: check.yml, which builds main again, and
+# notify-workspace.yml, which asks the workspace to converge its
+# consumers onto the new release.
+#
+# A run that finds main moved under it (its push is refused as a
+# non-fast-forward) fails and leaves the bump to the next run.
+
+name: update
+
+on:
+  schedule:
+    # Daily, off the hour. A run with nothing to do installs Nix, reads
+    # the release, and stops, in about a minute.
+    - cron: "41 6 * * *"
+  workflow_dispatch:
+
+# Pushing the bump; dispatching check.yml and notify-workspace.yml.
+permissions:
+  contents: write
+  actions: write
+
+# Two runs at once could both find the same release and race to push.
+concurrency:
+  group: update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: DeterminateSystems/nix-installer-action@v22
+        with:
+          # Upstream Nix, as in check.yml.
+          determinate: false
+
+      # GitHub's "latest release" is the newest release that is neither
+      # a draft nor a prerelease, so neither upstream's old v1.x tags
+      # nor a prerelease is a candidate. The version sort guards
+      # against a "latest" that sorts below the current tag.
+      - name: Move the nbd input to upstream's latest release
+        id: bump
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          current=$(jq -r '.nodes.nbd.original.ref' flake.lock)
+          latest=$(gh api repos/NetworkBlockDevice/nbd/releases/latest --jq .tag_name)
+          newest=$(printf '%s\n%s\n' "$current" "$latest" | sort -V | tail -n1)
+          if [[ "$latest" == "$current" || "$newest" != "$latest" ]]; then
+            echo "$current is upstream's latest release."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "$current becomes $latest."
+          sed -i -E "s|(nbd\.url = \"github:NetworkBlockDevice/nbd/)[^\"]+|\1$latest|" flake.nix
+          grep -q "nbd/$latest\"" flake.nix
+          nix flake update nbd
+          [[ "$(jq -r '.nodes.nbd.original.ref' flake.lock)" == "$latest" ]]
+          git diff
+          {
+            echo "changed=true"
+            echo "before=${current#nbd-}"
+            echo "after=${latest#nbd-}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Run the flake checks against the bump
+        if: steps.bump.outputs.changed == 'true'
+        run: nix flake check -L
+
+      - name: Push the bump to main
+        if: steps.bump.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BEFORE: ${{ steps.bump.outputs.before }}
+          AFTER: ${{ steps.bump.outputs.after }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add flake.nix flake.lock
+          git commit -m "maint(nbd): $BEFORE -> $AFTER"
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}" HEAD:main
+          echo "::notice::Pushed nbd $AFTER to main."
+
+      # Both take main's head as their subject: check.yml with no inputs
+      # builds main's own commit, and notify-workspace.yml passes the
+      # head of the ref it was dispatched on.
+      - name: Start the runs the push would have started
+        if: steps.bump.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh workflow run check.yml --repo "$GITHUB_REPOSITORY" --ref main
+          gh workflow run notify-workspace.yml --repo "$GITHUB_REPOSITORY" --ref main

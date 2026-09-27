@@ -5,6 +5,9 @@
 # there, never touch repo contents. Pin-update pushes are converge's own
 # output and are skipped — dispatching for them would only queue a no-op
 # run.
+# update.yml dispatches this workflow after pushing a release bump to
+# main: a push made with the workflow token starts nothing on its own,
+# and the dispatched run reports main's head, which is that bump.
 # Reference: ch-nix-workspace docs/development/flake-sync.md
 # § Scheduled convergence.
 
@@ -13,12 +16,13 @@ name: notify-workspace
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions: {}
 
 jobs:
   dispatch:
-    if: "!startsWith(github.event.head_commit.message, 'maint: update flake pins')"
+    if: "github.event_name != 'push' || !startsWith(github.event.head_commit.message, 'maint: update flake pins')"
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
