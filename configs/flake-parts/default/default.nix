@@ -11,7 +11,6 @@
 
   debug = false;
   caisson = {
-    configInfo.configName = "nbd-nix";
     libOverlays.exported = libOverlays: {
       inherit (libOverlays) default;
     };
