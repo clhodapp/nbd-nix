@@ -6,6 +6,8 @@
   inputs = {
     caisson.url = "github:nix-caisson/caisson";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-parts.url = "github:hercules-ci/flake-parts";
+    flake-parts.inputs.nixpkgs-lib.follows = "nixpkgs";
 
     nbd.flake = false;
     nbd.url = "github:NetworkBlockDevice/nbd";
@@ -16,19 +18,20 @@
     let
       lib = caisson.lib.caisson-core.mkLib {
         inherit inputs;
-
+        namespace = "nbd-nix";
+        systems = [
+          "x86_64-linux"
+          "aarch64-linux"
+        ];
         projects = {
           inherit caisson;
         };
 
-        libOverlays = mkLibOverlay: {
-          default = mkLibOverlay ./lib-overlays/default;
-        };
+        libOverlays = caisson.lib.caisson-core.mkLibOverlays ./lib-overlays;
       };
     in
-    lib.caisson.mkFlake {
-      name = "nbd-nix";
-      configModule = lib.caisson.mkFlakeModule ./configs/flake-parts/default;
+    lib.caisson.flake-parts.mkConfiguration {
+      configModule = lib.caisson.flake-parts.mkModule ./configs/flake-parts/default;
     };
 
 }

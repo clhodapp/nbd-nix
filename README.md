@@ -43,9 +43,11 @@ set. With plain nixpkgs:
 }
 ```
 
-`overlays.default` is a plain nixpkgs overlay, so it also drops into
-whatever overlay list a framework exposes, and into
-`nixpkgs.overlays` in a NixOS configuration.
+`overlays.default` is a plain nixpkgs overlay, so it also goes into
+`nixpkgs.overlays` in a NixOS configuration, or into whatever overlay
+list a framework exposes. In a caisson-based flake, that means listing
+`inputs.nbd-nix.overlays.default` in
+`caisson.nixpkgs.pkgSets.pkgs.overlayImports`.
 
 Because the overlay replaces top-level `pkgs.nbd`, NixOS modules such as
 `services.nbd.server` pick up the overlaid build with no further wiring,
