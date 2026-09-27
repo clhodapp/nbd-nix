@@ -79,15 +79,16 @@
     "nbd": {
       "flake": false,
       "locked": {
-        "lastModified": 1789401542,
-        "narHash": "sha256-1wpmQc4lpp1OmKShb8+U1KOseu02IkfCPcSrt8jbBOo=",
+        "lastModified": 1775749677,
+        "narHash": "sha256-0ahoLnwLdQdpr0AuRpNoid17hXo9BWlIOWRjRwhJ/LM=",
         "owner": "NetworkBlockDevice",
         "repo": "nbd",
-        "rev": "e906c55438d4f0a606f571b60640461383c4d059",
+        "rev": "f96f7fca3b37f4254c26c95f5c6c9dae70e030a1",
         "type": "github"
       },
       "original": {
         "owner": "NetworkBlockDevice",
+        "ref": "nbd-3.27.1",
         "repo": "nbd",
         "type": "github"
       }

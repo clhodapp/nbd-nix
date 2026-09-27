@@ -2,26 +2,23 @@
 
 Carries the pin of upstream
 [nbd](https://github.com/NetworkBlockDevice/nbd) (the Network Block
-Device userland: `nbd-server`, `nbd-client`) and exports
-`overlays.default`, a nixpkgs overlay that rebuilds nixpkgs' `nbd`
-package from that pinned upstream-master source. The overlay replaces
-top-level `pkgs.nbd`, so everything in a consuming package set —
-including nixpkgs' own modules and dependents — gets the
-upstream-master build.
+Device userland: `nbd-server`, `nbd-client`) at its newest release and
+exports `overlays.default`, a nixpkgs overlay that rebuilds nixpkgs'
+`nbd` package from that release. The overlay replaces top-level
+`pkgs.nbd`, so everything in a consuming package set, including
+nixpkgs' own modules and dependents, gets that build.
 
-The override keeps nixpkgs' packaging and swaps only the source: the
-release patches are dropped (they target the release tarball) and
-`autoreconfHook`, `autoconf-archive`, and `flex` are added, since a git
-checkout ships no pre-generated build system.
+The override keeps nixpkgs' packaging and swaps only the source and
+version. nixpkgs' patches are dropped, since they are written against
+the release nixpkgs carries.
 
 ## Why
 
-nixpkgs builds nbd from upstream's release tarballs, and upstream
-releases infrequently: nbd 3.26.1 (March 2024) was followed by 3.27.0
-in March 2026, a two-year gap, while master kept taking commits
-throughout. A fix that lands on master can therefore wait a long time
-to reach a nixpkgs package set. This flake closes that gap, at the
-cost of building from a moving branch rather than a released tarball.
+nixpkgs packages a new nbd release some time after upstream tags it,
+and a channel carries that package some time after that. This flake
+builds the newest release as soon as upstream tags it: a daily
+workflow moves the `nbd` input to the latest release, checks that it
+builds, and pushes the bump to `main`.
 
 ## Consuming
 
@@ -60,14 +57,17 @@ evaluates against.
 pin a revision through their own lockfile and update on their own
 schedule.
 
-The `nbd` input tracks upstream's default branch, so the version this
-overlay builds moves whenever the pin is refreshed. Treat that as the
-intended behavior rather than a stability guarantee: the point of this
-flake is to be ahead of the release tarballs. The exported surface is
-just `overlays.default`, and a change to that name would be a breaking
-change.
+The `nbd` input names upstream's newest release tag, and
+`.github/workflows/update.yml` moves it forward daily as releases
+appear, so the version this overlay builds follows upstream. The
+exported surface is just `overlays.default`, and a change to that name
+would be a breaking change.
 
 ## Development
 
 `nix flake check` builds the overlaid `nbd` against this flake's own
 nixpkgs pin; `nix fmt` formats.
+
+To move to a release by hand, change the tag in the `nbd` input's URL
+in `flake.nix` and run `nix flake update nbd`. The overlay reads its
+version from that tag, so nothing else changes.
