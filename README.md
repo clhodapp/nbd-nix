@@ -25,8 +25,9 @@ and a channel carries that package some time after that. This flake
 builds the newest release as soon as upstream tags it, and the master
 snapshot for a fix that has not been released yet: a daily workflow
 moves the `nbd` input to the latest release and the `nbd-unstable`
-input to the branch head, checks that both build, and pushes the
-advance to `main`.
+input to the branch head, checks each on its own, and pushes the
+advances that build to `main`; one that fails its check stays where it
+was and does not hold the other back.
 
 ## Consuming
 
