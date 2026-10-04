@@ -41,8 +41,6 @@
         pkgOverlays = caisson.lib.caisson-core.mkPkgOverlays ./pkg-overlays;
       };
     in
-    lib.caisson.flake-parts.mkConfiguration {
-      configModule = lib.caisson-core.configs.flake.nbd-nix;
-    };
+    lib.caisson.flake-parts.mkTopConfiguration { };
 
 }
