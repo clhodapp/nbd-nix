@@ -96,11 +96,11 @@
     "nbd-unstable": {
       "flake": false,
       "locked": {
-        "lastModified": 1790514846,
-        "narHash": "sha256-F3/VbRf4YSTitgHqNcQ383w071dJPfRvIoFDacxjCKI=",
+        "lastModified": 1791106644,
+        "narHash": "sha256-Gmjcq+x9FWEtq2RXF+ZUEZPow+4lZJPDnp9DooyCZ9k=",
         "owner": "NetworkBlockDevice",
         "repo": "nbd",
-        "rev": "d35e26750b671931eff2caa5d4052c813ca38087",
+        "rev": "9c69969ca31187b65add9d769f98d3af94f34cd0",
         "type": "github"
       },
       "original": {
