@@ -8,8 +8,9 @@
 # `default` entry, not an entry of its own. A consumer that lists this
 # flake in `projects` holds it as `nbd-nix/default`, which its package
 # sets apply by default.
-{ closure-inputs, ... }:
+{ closure-lib, ... }:
 let
+  inherit (closure-lib.caisson) dependencies;
   # Upstream computes its version with `git describe` at configure
   # time, which a flake input cannot run; nixpkgs' packaging puts the
   # package's `version` in its place. So the version is the release
@@ -21,7 +22,7 @@ let
   # snapshots: the newest release, then the snapshot's commit date.
   nbdUnstableDate =
     let
-      d = closure-inputs.nbd-unstable.lastModifiedDate;
+      d = dependencies.nbd-unstable.lastModifiedDate;
     in
     "${builtins.substring 0 4 d}-${builtins.substring 4 2 d}-${builtins.substring 6 2 d}";
   nbdUnstableVersion = "${nbdVersion}-unstable-${nbdUnstableDate}";
@@ -29,7 +30,7 @@ in
 {
   overlay = final: prev: {
     nbd = prev.nbd.overrideAttrs {
-      src = closure-inputs.nbd;
+      src = dependencies.nbd;
       version = nbdVersion;
       # nixpkgs' patches are written against the release it
       # carries; a newer release includes or supersedes them.
@@ -38,7 +39,7 @@ in
     # The same packaging built from upstream's default branch.
     # Added beside `nbd`, replacing nothing.
     nbd-unstable = final.nbd.overrideAttrs {
-      src = closure-inputs.nbd-unstable;
+      src = dependencies.nbd-unstable;
       version = nbdUnstableVersion;
     };
   };
