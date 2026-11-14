@@ -21,7 +21,17 @@
   # it by default, and the flake exports it as `pkgOverlays` and as the
   # plain `overlays.default`.
 
-  partitionedAttrs.checks = "checks";
+  # The checks of nbd-nix, with the pins of tests/dependencies that only
+  # the checks need (configs/flake/checks). The caisson top gathers the
+  # checks of every configuration declared inside it into its `checks`
+  # output. This selector passes the configuration up to nothing, so a
+  # flake that reads the exports of nbd-nix evaluates neither the
+  # configuration nor its pins.
+  caisson.flake-parts.configurations.checks = lib.caisson.flake-parts.mkConfiguration {
+    inherit (lib.caisson.pins.flake-compat ../../../tests/dependencies) dependencies;
+  };
+  caisson.flake-parts.exported = _: { };
+
   partitionedAttrs.formatter = "formatter";
 
   partitions.formatter = {
@@ -31,26 +41,6 @@
       {
         imports = [ inputs.treefmt-nix.flakeModule ];
         perSystem.treefmt.programs.nixfmt.enable = true;
-      };
-  };
-
-  partitions.checks = {
-    extraInputs = (lib.caisson.pins.flake-compat ../../../tests/dependencies).dependencies;
-    module =
-      { inputs, ... }:
-      {
-        imports = [ inputs.treefmt-nix.flakeModule ];
-        perSystem =
-          { pkgs, ... }:
-          {
-            checks = {
-              # Building both packages proves the pinned release and
-              # the pinned master snapshot still autoreconf and
-              # compile against the pinned nixpkgs.
-              nbd = pkgs.nbd;
-              nbd-unstable = pkgs.nbd-unstable;
-            };
-          };
       };
   };
 
